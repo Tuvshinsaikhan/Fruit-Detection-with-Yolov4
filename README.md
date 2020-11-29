@@ -145,7 +145,7 @@ It took around 30 *Epochs* for the training set to obtain a stable loss very clo
 
 The architecture and design of the app has been thought with the objective to appear autonomous and simple to use. it is supposed to lead  the user in the right direction with minimal interaction calls (Figure 4). The user needs to put the fruit under the camera, reads the proposition from the machine and validates or not the prediction by raising his thumb up or down respectively. 
 
-![workflow](https://github.com/fbraza/DSTI_Python_Labs/blob/readme/assets/Figure_5.png)
+![workflow](/readme/assets/Figure_5.png)
 
 *Figure 4: Application workflow*
 
@@ -187,7 +187,8 @@ In our situation the interaction between backend and frontend is bi-directional.
 
 #### Usage 
 
-To use the application. Clone or download the repository in your computer. Check that `python 3.7` or above is installed in your computer. Download the weights [here](https://drive.google.com/file/d/1oxkA6hP24AuDrQCSPTprlKsDxRXWiFiW/view?usp=sharing) (They will be hosted into a different platform soon). Unzip the archive and put the `config` folder at the root of your repository. The structure of your folder should look like the one below:
+To use the application. Clone or download the repository in your computer. Check that `python 3.7` or above is installed in your computer.
+The structure of your folder should look like the one below:
 
 ```bash
 .
