@@ -17,7 +17,7 @@ We will report here the fundamentals needed to build such detection system. Rega
 #### Dataset
 In this project we aim at the identification of 4 different fruits: tomatoes, bananas, apples and mangoes. From these we defined 4 different classes by fruits: *single fruit*, *group of fruit*, *fruit in bag*, *group of fruit in bag*. An additional class for an empty camera field has been added which puts the total number of classes to 17. A dataset of 20 to 30 images per class has been generated using the same camera as for predictions. In total we got 338 images. Example images for each class are provided in Figure 1 below. 
 
-![Figure 1](https://github.com/fbraza/DSTI_Python_Labs/blob/readme/assets/Figure_1.png)
+![Figure 1](/assets/Figure_1.png)
 
 *Figure 1: Representative pictures of our fruits without and with bags*
 
@@ -51,7 +51,7 @@ A.Compose(
      A.BboxParams('yolo', ['class_labels'])
     )
 ```
-Each image went through 150 distinct rounds of transformations which brings the total number of images to 50700. Our images have been spitted into training and validation sets at a 9|1 ratio. The full code can be seen [here](https://github.com/fbraza/DSTI_Python_Labs/blob/master/lib_data_augmentation/data_augmentation.py) for data augmentation and [here](https://github.com/fbraza/DSTI_Python_Labs/blob/master/lib_data_augmentation/split_train_test.py) for the creation of training & validation sets.
+Each image went through 150 distinct rounds of transformations which brings the total number of images to 50700. Our images have been spitted into training and validation sets at a 9|1 ratio. The full code can be seen [here](https://github.com/fbraza/DSTI_Python_Labs/blob/master/lib_data_augmentation/data_augmentation.py) for data augmentation and [here](https://lib_data_augmentation/split_train_test.py) for the creation of training & validation sets.
 
 #### Fruit detection model training with YOLOv4
 For fruit detection we used the YOLOv4 architecture whom backbone network is based on the CSPDarknet53 ResNet. YOLO is a one-stage detector meaning that predictions for object localization and classification are done at the same time. Additionally and through its previous iterations the model significantly improves by adding Batch-norm, higher resolution, anchor boxes, objectness score to bounding box prediction and a detection in three granular step to improve the detection of smaller objects. From the user perspective YOLO proved to be very easy to use and setup. Indeed because of the time restriction when using the Google Colab free tier we decided to install locally all necessary drivers (NVIDIA, CUDA) and compile locally the [Darknet architecture](https://github.com/AlexeyAB/darknet). This has been done on a Linux computer running Ubuntu 20.04, with 32GB of RAM, NVIDIA GeForce GTX1060 graphic card with 6GB memory and an Intel i7 processor.
