@@ -16,15 +16,6 @@
 </head>
 <body>
 
-<div class="jumbotron text-center" style="margin-bottom:0">
-  <h1>QuelFruit</h1>
-  <h2>The Fruit Identification AI</h2>
-  <p>This software uses YOLO object detection 
-		to identify fruits you might find in the grocery store. With a simple thumbs up, 
-		thumbs down gesture the customer can confirm the ID and print their barcode,
-		saving them time and the need to touch a potentially dirty screen</p> 
-</div>
-
 <nav class="navbar navbar-inverse">
     <div class="container-fluid">
       <div class="navbar-header">
@@ -47,6 +38,269 @@
   </nav>
 
 
-<div class="jumbotron text-center">
-<h1>Under the Hood</h1>
-</div>
+  <div class="container">
+    <div class="jumbotron text-left">
+    
+    
+    <h1>Fruit detection using deep learning and human-machine interaction</h1>
+    
+    <h2>Introduction</h2>
+    
+    <p>Most of the retails markets have self-service systems where the client can put the fruit but need to navigate through the system's interface to select and validate the fruits they want to buy. The good delivery of this process highly depends on human interactions and actually holds some trade-offs: heavy interface, difficulty to find the fruit we are looking for on the machine, human errors or intentional wrong labeling of the fruit and so on.</p>
+    
+    <p>Herein the purpose of our work is to propose an alternative approach to identify fruits in retail markets. More specifically we think that the improvement should consist of a faster process leveraging an user-friendly interface. One aspect of this project is to delegate the fruit identification step to the computer using deep learning technology. The interaction with the system will be then limited to a validation step performed by the client. This step also relies on the use of deep learning and gestural detection instead of direct physical interaction with the machine. Theoretically this proposal could both simplify and speed up the process to identify fruits and limit errors by removing the human factor.</p>
+    
+    <p>We will report here the fundamentals needed to build such detection system. Regarding hardware, the fundamentals are two cameras and a computer to run the system . A fruit detection model has been trained and evaluated using the fourth version of the You Only Look Once (YOLOv4) object detection architecture. The human validation step has been established using a convolutional neural network (CNN) for classification of thumb-up and thumb-down. The model has been written using Keras, a high-level framework for Tensor Flow.  For both deep learning systems the predictions are ran on an backend server while a front-end user interface will output the detection results and presents the user interface to let the client validate the predictions.</p>
+    
+    <h2>Methodology &amp; Results</h2>
+    
+    <h4>Dataset</h4>
+    
+    <p>In this project we aim at the identification of 4 different fruits: tomatoes, bananas, apples and mangoes. From these we defined 4 different classes by fruits: <em>single fruit</em>, <em>group of fruit</em>, <em>fruit in bag</em>, <em>group of fruit in bag</em>. An additional class for an empty camera field has been added which puts the total number of classes to 17. A dataset of 20 to 30 images per class has been generated using the same camera as for predictions. In total we got 338 images. Example images for each class are provided in Figure 1 below. </p>
+    7
+    
+    <p><img class="scale-down" src="../static/images/Figure_1.png" alt="Figure 1" title="" style="max-width: 100%"/></p>
+    
+    <p><em>Figure 1: Representative pictures of our fruits without and with bags</em></p>
+    
+    <p>The Computer Vision and Annotation Tool (<a href="https://github.com/openvinotoolkit/cvat">CVAT</a>) has been used to label the images and export the bounding boxes data in YOLO format.</p>
+    
+    <p>```Bash</p>
+    
+    <h1>Example of labeling data in YOLO format</h1>
+    
+    <h2>Class Index     x          y          width      height</h2>
+    
+    <p>13              0.438271   0.523156   0.179000   0.191354
+    13              0.581010   0.358792   0.183646   0.205250
+    13              0.688271   0.516125   0.203708   0.193042
+    9               0.568677   0.433490   0.449063   0.356479</p>
+    
+    <h1>x and y are the coordinates of the center point of the bounding box</h1>
+    
+    <h1>Values are normalized regarding size of the image</h1>
+    
+    <p>```</p>
+    
+    <h4>Data augmentation</h4>
+    
+    <p>We used traditional transformations that combined affine image transformations and color modifications. These transformations have been performed using the <a href="https://github.com/albumentations-team/albumentations">Albumentations</a> python library. This library leverages <code>numpy</code>, <code>opencv</code> and <code>imgaug</code> python libraries through an easy to use API. The sequence of transformations can be seen below in the code snippet.
+    <code>python
+    A.Compose(
+        [A.Resize(416, 416),
+         A.Equalize(by_channels=True),
+         A.RGBShiftr_shift_limit=(-30, 30), g_shift_limit=(-30, 30), b_shift_limit=(-30, 30), p=0.25),
+         A.HorizontalFlip(p=0.35),
+         A.VerticalFlip(p=0.35),
+         A.ShiftScaleRotate(border_mode=cv2.BORDER_REPLICATE, p=0.35),
+         A.RandomSnow(brightness_coeff=2.0, p=0.2)],
+         A.BboxParams('yolo', ['class_labels'])
+        )
+    </code>
+    Each image went through 150 distinct rounds of transformations which brings the total number of images to 50700. Our images have been spitted into training and validation sets at a 9|1 ratio. The full code can be seen <a href="https://github.com/fbraza/DSTI_Python_Labs/blob/master/lib_data_augmentation/data_augmentation.py">here</a> for data augmentation and <a href="https://github.com/fbraza/DSTI_Python_Labs/blob/master/lib_data_augmentation/split_train_test.py">here</a> for the creation of training &amp; validation sets.</p>
+    
+    <h4>Fruit detection model training with YOLOv4</h4>
+    
+    <p>For fruit detection we used the YOLOv4 architecture whom backbone network is based on the CSPDarknet53 ResNet. YOLO is a one-stage detector meaning that predictions for object localization and classification are done at the same time. Additionally and through its previous iterations the model significantly improves by adding Batch-norm, higher resolution, anchor boxes, objectness score to bounding box prediction and a detection in three granular step to improve the detection of smaller objects. From the user perspective YOLO proved to be very easy to use and setup. Indeed because of the time restriction when using the Google Colab free tier we decided to install locally all necessary drivers (NVIDIA, CUDA) and compile locally the <a href="https://github.com/AlexeyAB/darknet">Darknet architecture</a>. This has been done on a Linux computer running Ubuntu 20.04, with 32GB of RAM, NVIDIA GeForce GTX1060 graphic card with 6GB memory and an Intel i7 processor.</p>
+    
+    <p>To evaluate the model we relied on two metrics: the <strong>mean average precision</strong> (mAP) and the <strong>intersection over union</strong> (IoU). The <strong>average precision</strong> (AP) is a way to get a fair idea of the model performance. It consists of computing the maximum precision we can get at different threshold of recall. Then we calculate the mean of these maximum precision. Now as we have more classes we need to get the AP for each class and then compute the mean again. This is why this metric is named <strong>mean average precision</strong>. Object detection brings an additional complexity: what if the model detects the correct class but at the wrong location meaning that the bounding box is completely off. Surely this prediction should not be counted as positive. That is where the IoU comes handy and allows to determines whether the bounding box is located at the right location. Usually a threshold of 0.5 is set and results above are considered as good prediction. As such the corresponding mAP is noted <strong>mAP@0.5</strong>. The principle of the IoU is depicted in Figure 2.</p>
+    
+    <p><img src="../static/images/Figure_2.jpg" alt="" title="" style="max-width: 100%"/></p>
+    
+    <p><em>Figure 2: Intersection over union principle</em></p>
+    
+    <p>The final results that we present here stems from an iterative process that prompted us to adapt several aspects of our model notably regarding the generation of our dataset and the splitting into different classes. We did not modify the architecture of YOLOv4 and run the model locally using some custom configuration file and pre-trained <a href="https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v3_optimal/yolov4.conv.137">weights</a> for the convolutional layers (<code>yolov4.conv.137</code>). Once everything is set up we just ran:</p>
+    
+    <p><code>bash
+    ./darknet detector train data/obj.data cfg/yolov4-custom-dsti.cfg yolov4.conv.137
+    </code></p>
+    
+    <p>We ran five different experiments and present below the result from the last one. The training lasted 4 days to reach a loss function of 1.1 (Figure 3A). To assess our model on validation set we used the <code>map</code> function from the darknet library with the final weights generated by our training:</p>
+    
+    <p><code>bash
+    ./darknet detector map data/obj.data cfg/yolov4-custom-dsti.cfg backup/yolov4-custom-dsti_final.weights
+    </code></p>
+    
+    <p>The results yielded by the validation set were fairly good as mAP@50 was about 98.72% with an average IoU of 90.47% (Figure 3B). We always tested our results by recording on camera the detection of our fruits to get a real feeling of the accuracy of our model as illustrated in Figure 3C.</p>
+    
+    <p><img src="../static/images/Figure_3.png" alt="Figure 3" title="" style="max-width: 100%"/></p>
+    
+    <p><em>Figure 3: Loss function (A). Metrics on validation set (B). Representative detection of our fruits (C)</em></p>
+    
+    <p>Below you can see a couple of short videos that illustrates how well our model works for fruit detection.</p>
+    
+    <ul>
+    <li><strong>All fruits</strong></li>
+    </ul>
+    
+    <p><img src="../static/images/Video_1.gif" alt="Video_1" title="" style="max-width: 100%"/></p>
+    
+    <ul>
+    <li><strong>Apples inside bag</strong></li>
+    </ul>
+    
+    <p><img src="../static/images/Video_2.gif" alt="Video_2" style="max-width: 100%"/></p>
+    
+    <ul>
+    <li><strong>Bananas inside bag</strong></li>
+    </ul>
+    
+    <p><img src="../static/images/Video_3.gif" alt="Video_3" style="max-width: 100%"/></p>
+    
+    <h4>Thumb detection model training with Keras</h4>
+    
+    <p>Pictures of thumb up (690 pictures), thumb down (791 pictures) and empty background pictures (347) on different positions and of different sizes have been taken with a webcam and used to train our model. Affine image transformations have been used for data augmentation (rotation, width shift, height shift). We use transfer learning with a <strong>vgg16 neural network</strong> imported with <code>imagenet</code> weights but without the top layers. We then add <code>flatten</code>, <code>dropout</code>, <code>dense</code>, <code>dropout</code> and <code>predictions</code> layers. The activation function of the last layer is a sigmoid function. The model has been ran in jupyter notebook on Google Colab with GPU using the free-tier account and the corresponding notebook can be found <a href="https://github.com/fbraza/DSTI_Python_Labs/blob/master/assets/Thumb%20Classification%20Training.ipynb">here</a> for reading. The final architecture of our CNN neural network is described in the table below.</p>
+    
+    <p>| <strong>Layer (type)</strong>            | <strong>Output Shape</strong>        | <strong>Param #</strong> |
+    | --------------------------- | ----------------------- | ------------ |
+    | input_1 (InputLayer)       | [(None, 224, 224, 3)] | 0            |
+    | block1_conv1 (Conv2D)      | (None, 224, 224, 64)    | 1792         |
+    | block1_conv2 (Conv2D)      | (None, 224, 224, 64)    | 36928        |
+    | block1_pool (MaxPooling2D) | (None, 112, 112, 64)    | 0            |
+    | block2_conv1 (Conv2D)      | (None, 112, 112, 128)   | 73856        |
+    | block2_conv2 (Conv2D)      | (None, 112, 112, 128)   | 147584       |
+    | block2_pool (MaxPooling2D) | (None, 56, 56, 128)     | 0            |
+    | block3_conv1 (Conv2D)      | (None, 56, 56, 256)     | 295168       |
+    | block3_conv2 (Conv2D)      | (None, 56, 56, 256)     | 590080       |
+    | block3_conv3 (Conv2D)      | (None, 56, 56, 256)     | 590080       |
+    | block3_pool (MaxPooling2D) | (None, 28, 28, 256)     | 0            |
+    | block4_conv1 (Conv2D)      | (None, 28, 28, 512)     | 1180160      |
+    | block4_conv2 (Conv2D)      | (None, 28, 28, 512)     | 2359808      |
+    | block4_conv3 (Conv2D)      | (None, 28, 28, 512)     | 2359808      |
+    | block4_pool (MaxPooling2D) | (None, 14, 14, 512)     | 0            |
+    | block5_conv1 (Conv2D)      | (None, 14, 14, 512)     | 2359808      |
+    | block5_conv2 (Conv2D)      | (None, 14, 14, 512)     | 2359808      |
+    | block5_conv3 (Conv2D)      | (None, 14, 14, 512)     | 2359808      |
+    | block5_pool (MaxPooling2D) | (None, 7, 7, 512)       | 0            |
+    | flatten (Flatten)           | (None, 25088)           | 0            |
+    | dropout (Dropout)           | (None, 25088)           | 0            |
+    | dense (Dense)               | (None, 128)             | 3211392      |
+    | dropout_1 (Dropout)        | (None, 128)             | 0            |
+    | predictions (Dense)         | (None, 3)               | 387          |</p>
+    
+    <p>Monitoring <strong>loss function</strong> and <strong>accuracy</strong> (precision) on both training and validation sets has been performed to assess the efficacy of our model. We can see that the training was quite fast to obtain a robust model. As soon as the fifth <em>Epoch</em> we have an abrupt decrease of the value of the loss function for both training and validation sets which coincides with an abrupt increase of the accuracy (Figure 4).  </p>
+    
+    <p><img src="../static/images/Figure_4.png" alt="Figure 4" title="" style="max-width: 100%"/></p>
+    
+    <p><em>Figure 4: Accuracy and loss function for CNN thumb classification model with Keras</em></p>
+    
+    <p>It took around 30 <em>Epochs</em> for the training set to obtain a stable loss very closed to 0 and a very high accuracy closed to 1. Our test with camera demonstrated that our model was robust and working well.</p>
+    
+    <ul>
+    <li><strong>Thumb down detection</strong></li>
+    </ul>
+    
+    <p><img src="../static/images/Video_4.gif" alt="Video_4" style="max-width: 100%"/></p>
+    
+    <ul>
+    <li><strong>Thumb up detection</strong></li>
+    </ul>
+    
+    <p><img src="../static/images/Video_5.gif" alt="Video_5" style="max-width: 100%"/></p>
+    
+    <h4>Server-side and client side application architecture</h4>
+    
+    <p>The architecture and design of the app has been thought with the objective to appear autonomous and simple to use. it is supposed to lead  the user in the right direction with minimal interaction calls (Figure 4). The user needs to put the fruit under the camera, reads the proposition from the machine and validates or not the prediction by raising his thumb up or down respectively. </p>
+    
+    <p><img src="../static/images/Figure_5.png" alt="workflow" title="" style="max-width: 100%"/></p>
+    
+    <p><em>Figure 4: Application workflow</em></p>
+    
+    <p>For the predictions we envisioned 3 different scenarios:</p>
+    
+    <ol>
+    <li>The easiest one where nothing is detected. </li>
+    <li>The scenario where one and only one type of fruit is detected.</li>
+    <li>The scenario where several types of fruit are detected by the machine</li>
+    </ol>
+    
+    <p>From these 3 scenarios we can have different possible outcomes:</p>
+    
+    <ol>
+    <li>Nothing is detected because no fruit is there or the machine cannot predict anything (very unlikely in our case)</li>
+    <li>One fruit is detected then we move to the next step where user needs to validate or not the prediction. If the user negates the prediction the whole process starts from beginning.</li>
+    <li>Several fruits are detected. The process restarts from the beginning and the user needs to put a uniform group of fruits. </li>
+    </ol>
+    
+    <p>From a technical point of view the choice we have made to implement the application are the following:</p>
+    
+    <ul>
+    <li>a backend server that runs locally using <code>Flask</code>.</li>
+    <li>a frontend client with <code>HTML</code> files send by the <code>Flask</code> server and <code>JavaScript</code> modules that treat messages coming from the backend.</li>
+    </ul>
+    
+    <p>In our situation the interaction between backend and frontend is bi-directional. First the backend reacts to client side interaction (e.g., press a button). Second we also need to modify the behavior of the frontend depending on what is happening on the backend. In this regard we complemented the <code>Flask</code> server with the <a href="https://www.shanelynn.ie/asynchronous-updates-to-a-webpage-with-flask-and-socket-io/">Flask-socketio</a> library to be able to send such messages from the server to the client. This is well illustrated in two cases: </p>
+    
+    <ul>
+    <li><p>The approach used to handle the image streams generated by the camera where the backend deals directly with image frames and send them subsequently to the client side. This approach circumvents any web browser compatibility issues as <code>png</code> images are sent to the browser. Treatment of the image stream has been done using the <code>OpenCV</code> library and the whole logic has been encapsulated into a python class <code>Camera</code>. The full code can be read <a href="https://github.com/fbraza/DSTI_Python_Labs/blob/master/lib_prediction/camera.py">here</a>.</p></li>
+    <li><p>The approach used to treat fruits and thumb detection then send the results to the client where models and predictions are respectively loaded and analyzed on the backend then results are directly send as messages to the frontend. Based on the message the client needs to display different pages. An example of the code can be read below for result of the thumb detection. The full code can be read <a href="https://github.com/fbraza/DSTI_Python_Labs/blob/master/static/js/application.js">here</a>.</p>
+    
+    <p><code>javascript
+    // receive details from server
+      socket.on('newnumber', function(msg) {
+          console.log("Received number" + msg.number);
+          // maintain a list of ten numbers
+          if (msg.number == 0)
+          {
+              result\_string = '\&lt;p\&gt; Thumb UP selected \&lt;/p\&gt;';
+              setTimeout(function(){
+                  window.location.href = "/ticket\_printing";
+              }, 4000);
+    </code></p></li>
+    </ul>
+    
+    <h4>Usage</h4>
+    
+    <p>To use the application. Clone or download the repository in your computer. Check that <code>python 3.7</code> or above is installed in your computer. Download the weights <a href="https://drive.google.com/file/d/1oxkA6hP24AuDrQCSPTprlKsDxRXWiFiW/view?usp=sharing">here</a> (They will be hosted into a different platform soon). Unzip the archive and put the <code>config</code> folder at the root of your repository. The structure of your folder should look like the one below:</p>
+    
+    <p><code>bash
+    .
+    ├── app.py
+    ├── assets
+    ├── config # config folder with weights and configuration for each model
+    ├── __init__.py
+    ├── lib_data_augmentation
+    ├── lib_prediction
+    ├── __pycache__
+    ├── README.md
+    ├── requirements.txt
+    ├── static
+    └── templates
+    </code></p>
+    
+    <p>Once done run the following command:</p>
+    
+    <p><code>bash
+    pip install -r requirements.txt
+    </code></p>
+    
+    <p>Once dependencies are installed in your system you can run the application locally with the following command:</p>
+    
+    <p><code>bash
+    python app.py
+    </code></p>
+    
+    <p>You can then access the application in your browser at the following address: http://localhost:5001</p>
+    
+    <p>Here an overview video to present the application workflow.</p>
+    
+    <p><img src="../static/images/Video_6.gif" alt="Video_6" title="" style="max-width: 100%"/></p>
+    
+    <h2>Discussion and perspectives</h2>
+    
+    <p>The final product we obtained revealed to be quite robust and easy to use. We managed to develop and put in production locally two deep learning models in order to smoothen the process of buying fruits in a super-market with the objectives mentioned in our introduction. However as every proof-of-concept our product still lacks some technical aspects and needs to be improved. </p>
+    
+    <p>Regarding the detection of fruits the final result we obtained stems from a iterative process through which we experimented a lot. A major point of confusion for us was the establishment of a proper dataset. In our first attempt we generated a bigger dataset with 400 photos by fruit. These photos were taken by each member of the project using different smart-phones. Interestingly while we got a bigger dataset after data augmentation the model's predictions were pretty unstable in reality despite yielding very good metrics at the validation step. That is why we decided to start from scratch and generated a new dataset using the camera that will be used by the final product (our webcam). Unexpectedly doing so and with less data lead to a more robust model of fruit detection with still nevertheless some unresolved edge cases. Indeed in all our photos we limited the maximum number of fruits to 4 which makes the model unstable when more similar fruits are on the camera. To illustrate this we had for example the case where above 4 tomatoes the system starts to predict apples! Additionally we need more photos with fruits in bag to allow the system to generalize better. Indeed prediction of fruits in bags can be quite challenging especially when using paper bags like we did. It would be interesting to see if we could include discussion with supermarkets in order to develop transparent and sustainable bags that would make easier the detection of fruits inside. Altogether this strongly indicates that <strong>building a bigger dataset with photos shot in the real context</strong> could resolve some of these points. </p>
+    
+    <p>While we do manage to deploy locally an application we still need to consolidate and consider some aspects before putting this project to production. This raised many questions and discussions in the frame of this project and fall under the umbrella of several topics that include deployment, continuous development of the data set, tracking, monitoring &amp; maintenance of the models : we have to be able to propose <strong>a whole platform</strong>, not only a detection/validation model. <strong>An AI model is a living object</strong> and the need is to ease the management of the application life-cycle.</p>
+    
+    <p>For the deployment part we should consider testing our models using less resource consuming neural network architectures. For fruit we used the full YOLOv4 as we were pretty comfortable with the computer power we had access to. However we should anticipate that devices that will run in market retails will not be as resourceful. As a consequence it will be interesting to test our application using some lite versions of the YOLOv4 architecture and assess whether we can get similar predictions and user experience. Similarly we should also test the usage of the Keras model on litter computers and see if we yield similar results.  <a href="https://www.raspberrypi.org/">Raspberry Pi</a> devices could be interesting machines to imagine a final product for the market. They are cheap and have been shown to be handy devices to deploy lite models of deep learning.</p>
+    
+    <p>Once the model is deployed one might think about how to improve it and how to handle edge cases raised by the client. Imagine the following situation. One client put the fruit in front of the camera and put his thumb down because the prediction is wrong. Firstly we definitively need to implement a way out in our application to let the client select by himself the fruits especially if the machine keeps giving wrong predictions. Secondly what can we do with these wrong predictions ? We could actually save them for later use. We could even make the client indirectly participate to the labeling in case of wrong predictions. Indeed when a prediction is wrong we could implement the following feature: save the picture, its wrong label into a database (probably a No-SQL document database here with timestamps as a key), and the real label that the client will enter as his way-out. Later the engineers could extract all the wrong predicted images, relabel them correctly and re-train the model by including the new images. It means that the system would learn from the customers by harnessing a <strong>feedback loop</strong>. This immediately raises another questions: when should we train a new model ? Some monitoring of our system should be implemented. One might think to keep track of all the predictions made by the device on a daily or weekly basis by <strong>monitoring some easy metrics</strong>: <code>number of right total predictions / number of total predictions</code>, <code>number of wrong total predictions / number of total predictions</code>. These metrics can then be declined by fruits. Establishing such strategy would imply the implementation of some data warehouse with the possibility to quickly generate reports that will help to take decisions regarding the update of the model. To build a deep confidence in the system is a goal we should not neglect.</p>
+    
+    <p>To conclude here we are confident in achieving a reliable product with high potential. Then, convincing supermarkets to adopt the system should not be too difficult as the cost is limited when the benefits could be very significant. Moreover, an example of using this kind of system exists in the catering sector with <strong>Compass company</strong> since 2019. It is applied to dishes recognition on a tray. Thousands of different products can be detected, and the bill is automatically output. The waiting time for paying has been divided by 3. Our system goes further by adding validation by camera after the detection step. More broadly, automatic object detection and validation by camera rather than manual interaction are certainly future success technologies. Of course, the autonomous car is the current most impressive project. But a lot of simpler applications in the everyday life could be imagined. The cost of cameras has become dramatically low, the possibility to deploy neural network architectures on small devices, allows considering this tool like a new powerful human machine interface. A further idea would be to improve the thumb recognition process by allowing all fingers’ detection, making possible to count. An even more advanced approach to communicate with the system could be also envisioned: voice control has already been used for a few years... Giving ears and eyes to machines definitely makes them closer to human behavior.</p>
+    
+    
+    
+    </div>
+    </div>
