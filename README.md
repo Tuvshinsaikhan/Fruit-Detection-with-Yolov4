@@ -51,14 +51,14 @@ A.Compose(
      A.BboxParams('yolo', ['class_labels'])
     )
 ```
-Each image went through 150 distinct rounds of transformations which brings the total number of images to 50700. Our images have been spitted into training and validation sets at a 9|1 ratio. The full code can be seen [here](https://github.com/fbraza/DSTI_Python_Labs/blob/master/lib_data_augmentation/data_augmentation.py) for data augmentation and [here](https://lib_data_augmentation/split_train_test.py) for the creation of training & validation sets.
+Each image went through 150 distinct rounds of transformations which brings the total number of images to 50700. Our images have been spitted into training and validation sets at a 9|1 ratio. The full code can be seen [here](https://github.com/fbraza/DSTI_Python_Labs/blob/master/lib_data_augmentation/data_augmentation.py) for data augmentation and [here](/lib_data_augmentation/split_train_test.py) for the creation of training & validation sets.
 
 #### Fruit detection model training with YOLOv4
 For fruit detection we used the YOLOv4 architecture whom backbone network is based on the CSPDarknet53 ResNet. YOLO is a one-stage detector meaning that predictions for object localization and classification are done at the same time. Additionally and through its previous iterations the model significantly improves by adding Batch-norm, higher resolution, anchor boxes, objectness score to bounding box prediction and a detection in three granular step to improve the detection of smaller objects. From the user perspective YOLO proved to be very easy to use and setup. Indeed because of the time restriction when using the Google Colab free tier we decided to install locally all necessary drivers (NVIDIA, CUDA) and compile locally the [Darknet architecture](https://github.com/AlexeyAB/darknet). This has been done on a Linux computer running Ubuntu 20.04, with 32GB of RAM, NVIDIA GeForce GTX1060 graphic card with 6GB memory and an Intel i7 processor.
 
 To evaluate the model we relied on two metrics: the **mean average precision** (mAP) and the **intersection over union** (IoU). The **average precision** (AP) is a way to get a fair idea of the model performance. It consists of computing the maximum precision we can get at different threshold of recall. Then we calculate the mean of these maximum precision. Now as we have more classes we need to get the AP for each class and then compute the mean again. This is why this metric is named **mean average precision**. Object detection brings an additional complexity: what if the model detects the correct class but at the wrong location meaning that the bounding box is completely off. Surely this prediction should not be counted as positive. That is where the IoU comes handy and allows to determines whether the bounding box is located at the right location. Usually a threshold of 0.5 is set and results above are considered as good prediction. As such the corresponding mAP is noted **mAP@0.5**. The principle of the IoU is depicted in Figure 2.
 
-![](https://github.com/fbraza/DSTI_Python_Labs/blob/readme/assets/Figure_2.jpg)
+![](/assets/Figure_2.jpg)
 
 *Figure 2: Intersection over union principle*
 
