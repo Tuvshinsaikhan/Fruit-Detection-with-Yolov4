@@ -145,7 +145,7 @@ It took around 30 *Epochs* for the training set to obtain a stable loss very clo
 
 The architecture and design of the app has been thought with the objective to appear autonomous and simple to use. it is supposed to lead  the user in the right direction with minimal interaction calls (Figure 4). The user needs to put the fruit under the camera, reads the proposition from the machine and validates or not the prediction by raising his thumb up or down respectively. 
 
-![workflow](/readme/assets/Figure_5.png)
+![workflow](/assets/Figure_5.png)
 
 *Figure 4: Application workflow*
 
