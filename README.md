@@ -51,7 +51,7 @@ A.Compose(
      A.BboxParams('yolo', ['class_labels'])
     )
 ```
-Each image went through 150 distinct rounds of transformations which brings the total number of images to 50700. Our images have been spitted into training and validation sets at a 9|1 ratio. The full code can be seen [here](https://github.com/fbraza/DSTI_Python_Labs/blob/master/lib_data_augmentation/data_augmentation.py) for data augmentation and [here](/lib_data_augmentation/split_train_test.py) for the creation of training & validation sets.
+Each image went through 150 distinct rounds of transformations which brings the total number of images to 50700. Our images have been spitted into training and validation sets at a 9|1 ratio. The full code can be seen [here](/lib_data_augmentation/data_augmentation.py) for data augmentation and [here](/lib_data_augmentation/split_train_test.py) for the creation of training & validation sets.
 
 #### Fruit detection model training with YOLOv4
 For fruit detection we used the YOLOv4 architecture whom backbone network is based on the CSPDarknet53 ResNet. YOLO is a one-stage detector meaning that predictions for object localization and classification are done at the same time. Additionally and through its previous iterations the model significantly improves by adding Batch-norm, higher resolution, anchor boxes, objectness score to bounding box prediction and a detection in three granular step to improve the detection of smaller objects. From the user perspective YOLO proved to be very easy to use and setup. Indeed because of the time restriction when using the Google Colab free tier we decided to install locally all necessary drivers (NVIDIA, CUDA) and compile locally the [Darknet architecture](https://github.com/AlexeyAB/darknet). This has been done on a Linux computer running Ubuntu 20.04, with 32GB of RAM, NVIDIA GeForce GTX1060 graphic card with 6GB memory and an Intel i7 processor.
@@ -76,7 +76,7 @@ We ran five different experiments and present below the result from the last one
 
 The results yielded by the validation set were fairly good as mAP@50 was about 98.72% with an average IoU of 90.47% (Figure 3B). We always tested our results by recording on camera the detection of our fruits to get a real feeling of the accuracy of our model as illustrated in Figure 3C.
 
-![Figure 3](https://github.com/fbraza/DSTI_Python_Labs/blob/readme/assets/Figure_3.png)
+![Figure 3](/assets/Figure_3.png)
 
 *Figure 3: Loss function (A). Metrics on validation set (B). Representative detection of our fruits (C)*
 
@@ -84,19 +84,19 @@ Below you can see a couple of short videos that illustrates how well our model w
 
 - **All fruits**
 
-![Video_1](https://github.com/fbraza/DSTI_Python_Labs/blob/master/assets/Video_1.gif)
+![Video_1](/assets/Video_1.gif)
 
 - **Apples inside bag**
 
-<img src="https://github.com/fbraza/DSTI_Python_Labs/blob/readme/assets/Video_2.gif" alt="Video_2" style="zoom:50%;" />
+<img src="/assets/Video_2.gif" alt="Video_2" style="zoom:50%;" />
 
 - **Bananas inside bag**
 
-<img src="https://github.com/fbraza/DSTI_Python_Labs/blob/readme/assets/Video_3.gif" alt="Video_3" style="zoom:50%;" />
+<img src="/assets/Video_3.gif" alt="Video_3" style="zoom:50%;" />
 
 #### Thumb detection model training with Keras
 
-Pictures of thumb up (690 pictures), thumb down (791 pictures) and empty background pictures (347) on different positions and of different sizes have been taken with a webcam and used to train our model. Affine image transformations have been used for data augmentation (rotation, width shift, height shift). We use transfer learning with a **vgg16 neural network** imported with `imagenet` weights but without the top layers. We then add `flatten`, `dropout`, `dense`, `dropout` and `predictions` layers. The activation function of the last layer is a sigmoid function. The model has been ran in jupyter notebook on Google Colab with GPU using the free-tier account and the corresponding notebook can be found [here](https://github.com/fbraza/DSTI_Python_Labs/blob/master/assets/Thumb%20Classification%20Training.ipynb) for reading. The final architecture of our CNN neural network is described in the table below.
+Pictures of thumb up (690 pictures), thumb down (791 pictures) and empty background pictures (347) on different positions and of different sizes have been taken with a webcam and used to train our model. Affine image transformations have been used for data augmentation (rotation, width shift, height shift). We use transfer learning with a **vgg16 neural network** imported with `imagenet` weights but without the top layers. We then add `flatten`, `dropout`, `dense`, `dropout` and `predictions` layers. The activation function of the last layer is a sigmoid function. The model has been ran in jupyter notebook on Google Colab with GPU using the free-tier account and the corresponding notebook can be found [here](/assets/Thumb%20Classification%20Training.ipynb) for reading. The final architecture of our CNN neural network is described in the table below.
 
 | **Layer (type)**            | **Output Shape**        | **Param \#** |
 | --------------------------- | ----------------------- | ------------ |
@@ -127,7 +127,7 @@ Pictures of thumb up (690 pictures), thumb down (791 pictures) and empty backgro
 
 Monitoring **loss function** and **accuracy** (precision) on both training and validation sets has been performed to assess the efficacy of our model. We can see that the training was quite fast to obtain a robust model. As soon as the fifth *Epoch* we have an abrupt decrease of the value of the loss function for both training and validation sets which coincides with an abrupt increase of the accuracy (Figure 4).  
 
-![Figure 4](https://github.com/fbraza/DSTI_Python_Labs/blob/readme/assets/Figure_4.png)
+![Figure 4](/assets/Figure_4.png)
 
 *Figure 4: Accuracy and loss function for CNN thumb classification model with Keras*
 
@@ -135,11 +135,11 @@ It took around 30 *Epochs* for the training set to obtain a stable loss very clo
 
 - **Thumb down detection**
 
-<img src="https://github.com/fbraza/DSTI_Python_Labs/blob/readme/assets/Video_4.gif" alt="Video_4" style="zoom:50%;" />
+<img src="/assets/Video_4.gif" alt="Video_4" style="zoom:50%;" />
 
 - **Thumb up detection**
 
-<img src="https://github.com/fbraza/DSTI_Python_Labs/blob/readme/assets/Video_5.gif" alt="Video_5" style="zoom:50%;" />
+<img src="/assets/Video_5.gif" alt="Video_5" style="zoom:50%;" />
 
 #### Server-side and client side application architecture
 
@@ -168,9 +168,9 @@ From a technical point of view the choice we have made to implement the applicat
 
 In our situation the interaction between backend and frontend is bi-directional. First the backend reacts to client side interaction (e.g., press a button). Second we also need to modify the behavior of the frontend depending on what is happening on the backend. In this regard we complemented the `Flask` server with the [Flask-socketio](<https://www.shanelynn.ie/asynchronous-updates-to-a-webpage-with-flask-and-socket-io/>) library to be able to send such messages from the server to the client. This is well illustrated in two cases: 
 
-- The approach used to handle the image streams generated by the camera where the backend deals directly with image frames and send them subsequently to the client side. This approach circumvents any web browser compatibility issues as `png` images are sent to the browser. Treatment of the image stream has been done using the `OpenCV` library and the whole logic has been encapsulated into a python class `Camera`. The full code can be read [here](https://github.com/fbraza/DSTI_Python_Labs/blob/master/lib_prediction/camera.py).
+- The approach used to handle the image streams generated by the camera where the backend deals directly with image frames and send them subsequently to the client side. This approach circumvents any web browser compatibility issues as `png` images are sent to the browser. Treatment of the image stream has been done using the `OpenCV` library and the whole logic has been encapsulated into a python class `Camera`. The full code can be read [here](/lib_prediction/camera.py).
 
-- The approach used to treat fruits and thumb detection then send the results to the client where models and predictions are respectively loaded and analyzed on the backend then results are directly send as messages to the frontend. Based on the message the client needs to display different pages. An example of the code can be read below for result of the thumb detection. The full code can be read [here](https://github.com/fbraza/DSTI_Python_Labs/blob/master/static/js/application.js).
+- The approach used to treat fruits and thumb detection then send the results to the client where models and predictions are respectively loaded and analyzed on the backend then results are directly send as messages to the frontend. Based on the message the client needs to display different pages. An example of the code can be read below for result of the thumb detection. The full code can be read [here](/static/js/application.js).
 
   ```javascript
     // receive details from server
@@ -221,7 +221,7 @@ You can then access the application in your browser at the following address: ht
 
 Here an overview video to present the application workflow.
 
-![Video_6](https://github.com/fbraza/DSTI_Python_Labs/blob/master/assets/Video_6.gif)
+![Video_6](/assets/Video_6.gif)
 
 
 
